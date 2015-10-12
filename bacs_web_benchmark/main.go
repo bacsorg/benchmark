@@ -59,7 +59,11 @@ func main() {
                     log.Fatal(err)
                 }
             }
-            fmt.Printf("id %d: %v\n", id, time.Since(start))
+            totalDuration := time.Since(start)
+            iterDurationNanos := totalDuration.Nanoseconds() / int64(*iterations)
+            iterDurationSeconds := float64(iterDurationNanos) / (1000 * 1000 * 1000)
+            fmt.Printf("id %d: %v total, %fs per iteration\n", id,
+                totalDuration, iterDurationSeconds)
             waitFinish.Done()
         }(i)
     }

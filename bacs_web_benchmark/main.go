@@ -13,6 +13,7 @@ import (
 )
 
 var jobs = flag.Int("jobs", 1, "Number of parallel jobs")
+var iterations = flag.Int("iterations", 1, "Number of iterations")
 var url = flag.String("bacs-url", "", "BACS URL")
 var username = flag.String("username", "", "Username")
 var password = flag.String("password", "-", "Password, - to read from stdin")
@@ -25,9 +26,10 @@ func main() {
         *password = string(gopass.GetPasswd())
     }
 
-    var wait sync.WaitGroup
+    var waitLogin, waitFinish sync.WaitGroup
+    waitLogin.Add(*jobs)
+    waitFinish.Add(*jobs)
     for i := 0; i < *jobs; i++ {
-        wait.Add(1)
         go func(id int) {
             start := time.Now()
             client, err := benchmark.NewWebClient(*url)
@@ -39,19 +41,27 @@ func main() {
             if err != nil {
                 log.Fatal(err)
             }
-
+            log.Printf("Logged in %d: %v", id, time.Since(start))
+            start = time.Now()
             err = client.EnterContest(*contestId)
             if err != nil {
                 log.Fatal(err)
             }
-            _, err = client.AcmMonitor()
-            if err != nil {
-                log.Fatal(err)
+            log.Printf("Entered contest %d: %v", id, time.Since(start))
+
+            waitLogin.Done()
+            waitLogin.Wait()
+            start = time.Now()
+
+            for i := 0; i < *iterations; i++ {
+                _, err = client.AcmMonitor()
+                if err != nil {
+                    log.Fatal(err)
+                }
             }
-            elapsed := time.Since(start)
-            fmt.Printf("id %d: %v\n", id, elapsed)
-            wait.Done()
+            fmt.Printf("id %d: %v\n", id, time.Since(start))
+            waitFinish.Done()
         }(i)
     }
-    wait.Wait()
+    waitFinish.Wait()
 }

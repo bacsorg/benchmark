@@ -19,6 +19,11 @@ var username = flag.String("username", "", "Username")
 var password = flag.String("password", "-", "Password, - to read from stdin")
 var contestId = flag.Int("contest-id", 0, "Contest ID to use")
 
+type JobResult struct {
+    fails               map[string]int
+    iterDurationSeconds float64
+}
+
 func main() {
     flag.Parse()
     if *password == "-" {
@@ -26,9 +31,9 @@ func main() {
         *password = string(gopass.GetPasswd())
     }
 
-    var waitLogin, waitFinish sync.WaitGroup
+    var waitLogin sync.WaitGroup
     waitLogin.Add(*jobs)
-    waitFinish.Add(*jobs)
+    results := make(chan JobResult)
     for i := 0; i < *jobs; i++ {
         go func(id int) {
             start := time.Now()
@@ -52,20 +57,41 @@ func main() {
             waitLogin.Done()
             waitLogin.Wait()
             start = time.Now()
+            var jobResult JobResult
+            jobResult.fails = make(map[string]int)
+            failsTotal := 0
 
             for i := 0; i < *iterations; i++ {
                 _, err = client.AcmMonitor()
                 if err != nil {
-                    log.Fatal(err)
+                    jobResult.fails[err.Error()]++
+                    failsTotal++
                 }
             }
             totalDuration := time.Since(start)
+            log.Printf("Scenario %d: %v", id, totalDuration)
+
             iterDurationNanos := totalDuration.Nanoseconds() / int64(*iterations)
-            iterDurationSeconds := float64(iterDurationNanos) / (1000 * 1000 * 1000)
-            fmt.Printf("id %d: %v total, %fs per iteration\n", id,
-                totalDuration, iterDurationSeconds)
-            waitFinish.Done()
+            jobResult.iterDurationSeconds =
+                float64(iterDurationNanos) / (1000 * 1000 * 1000)
+            results <- jobResult
         }(i)
     }
-    waitFinish.Wait()
+    var globalResult JobResult
+    globalResult.fails = make(map[string]int)
+    failsTotal := 0
+    for i := 0; i < *jobs; i++ {
+        result := <-results
+        for key, value := range result.fails {
+            globalResult.fails[key] += value
+            failsTotal += value
+        }
+        globalResult.iterDurationSeconds += result.iterDurationSeconds / float64(*jobs)
+    }
+    log.Printf("Average scenario execution time: %fs", globalResult.iterDurationSeconds)
+    log.Printf("Failed %d/%d (%02d%%)", failsTotal, *jobs**iterations,
+        100*failsTotal/(*jobs**iterations))
+    for key, value := range globalResult.fails {
+        log.Printf("Failure %q: %d times", key, value)
+    }
 }

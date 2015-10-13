@@ -32,8 +32,18 @@ func LoadAcmMonitor(client *benchmark.WebClient) error {
     return err
 }
 
+func SubmitA(client *benchmark.WebClient) error {
+    return client.Submit("A", "C++ 11", `#include <iostream>
+                                         int main() {
+                                           int a, b;
+                                           std::cin >> a >> b;
+                                           std::cout << a + b << std::endl;
+                                         }`)
+}
+
 var scenarios = map[string]Scenario{
     "LoadAcmMonitor": LoadAcmMonitor,
+    "SubmitA":        SubmitA,
 }
 
 func main() {

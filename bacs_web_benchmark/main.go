@@ -18,7 +18,7 @@ var url = flag.String("bacs-url", "", "BACS URL")
 var username = flag.String("username", "", "Username")
 var password = flag.String("password", "-", "Password, - to read from stdin")
 var contestId = flag.Int("contest-id", 0, "Contest ID to use")
-var scenario = flag.String("scenario", "LoadAcmMonitor", "Name of scenario to run")
+var scenario = flag.String("scenario", "AcmMonitor", "Name of scenario to run")
 
 type JobResult struct {
     fails               map[string]int
@@ -27,8 +27,18 @@ type JobResult struct {
 
 type Scenario func(client *benchmark.WebClient) error
 
-func LoadAcmMonitor(client *benchmark.WebClient) error {
+func AcmMonitor(client *benchmark.WebClient) error {
     _, err := client.AcmMonitor()
+    return err
+}
+
+func SchoolFinalMonitor(client *benchmark.WebClient) error {
+    _, err := client.SchoolFinalMonitor()
+    return err
+}
+
+func MySchoolFinalSubmits(client *benchmark.WebClient) error {
+    _, err := client.MySchoolFinalSubmits()
     return err
 }
 
@@ -42,8 +52,10 @@ func SubmitA(client *benchmark.WebClient) error {
 }
 
 var scenarios = map[string]Scenario{
-    "LoadAcmMonitor": LoadAcmMonitor,
-    "SubmitA":        SubmitA,
+    "AcmMonitor":           AcmMonitor,
+    "SchoolFinalMonitor":   SchoolFinalMonitor,
+    "MySchoolFinalSubmits": MySchoolFinalSubmits,
+    "SubmitA":              SubmitA,
 }
 
 func main() {

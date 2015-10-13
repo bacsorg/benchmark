@@ -76,9 +76,12 @@ func (c *WebClient) EnterContest(contestId int) error {
     return nil
 }
 
-func (c *WebClient) AcmMonitor() (string, error) {
-    resp, err := c.httpClient.Get(
-        c.URLf("/Monitor/AcmMonitor?contestId=%d&showLeftMenu=True", c.contestId))
+func (c *WebClient) monitor(name string, params ...string) (string, error) {
+    url := c.URLf("/Monitor/%s?contestId=%d", name, c.contestId)
+    for _, param := range params {
+        url += "&" + param
+    }
+    resp, err := c.httpClient.Get(url)
     if err != nil {
         return "", err
     }
@@ -91,6 +94,18 @@ func (c *WebClient) AcmMonitor() (string, error) {
         return "", err
     }
     return string(body), nil
+}
+
+func (c *WebClient) AcmMonitor() (string, error) {
+    return c.monitor("AcmMonitor", "showLeftMenu=True")
+}
+
+func (c *WebClient) SchoolFinalMonitor() (string, error) {
+    return c.monitor("SchoolFinalMonitor")
+}
+
+func (c *WebClient) MySchoolFinalSubmits() (string, error) {
+    return c.monitor("MySchoolFinalSubmits")
 }
 
 func (c *WebClient) Submit(problem, compiler, solution string) error {

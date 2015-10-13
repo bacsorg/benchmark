@@ -51,8 +51,18 @@ func (c *WebClient) Login(username, password string) error {
     if err != nil {
         return err
     }
-    resp.Body.Close()
-    return nil
+    defer resp.Body.Close()
+    // check that login succeeded
+    url, err := url.Parse(c.bacsBaseUrl)
+    if err != nil {
+        return err
+    }
+    for _, cookie := range c.httpClient.Jar.Cookies(url) {
+        if cookie.Name == "ASP.NET_SessionId" {
+            return nil
+        }
+    }
+    return fmt.Errorf("Unable to login")
 }
 
 func (c *WebClient) EnterContest(contestId int) error {

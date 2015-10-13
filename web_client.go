@@ -92,3 +92,19 @@ func (c *WebClient) AcmMonitor() (string, error) {
     }
     return string(body), nil
 }
+
+func (c *WebClient) Submit(problem, compiler, solution string) error {
+    resp, err := c.httpClient.PostForm(
+        c.URLf("/Contest/Submit?contestId=%d", c.contestId),
+        url.Values{
+            "Problem":          {problem},
+            "Compiler":         {CompilerId(compiler)},
+            "SolutionText":     {solution},
+            "SolutionFileType": {"Text"},
+        })
+    if err != nil {
+        return err
+    }
+    resp.Body.Close()
+    return nil
+}

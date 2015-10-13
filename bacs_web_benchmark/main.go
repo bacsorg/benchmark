@@ -18,10 +18,22 @@ var url = flag.String("bacs-url", "", "BACS URL")
 var username = flag.String("username", "", "Username")
 var password = flag.String("password", "-", "Password, - to read from stdin")
 var contestId = flag.Int("contest-id", 0, "Contest ID to use")
+var scenario = flag.String("scenario", "LoadAcmMonitor", "Name of scenario to run")
 
 type JobResult struct {
     fails               map[string]int
     iterDurationSeconds float64
+}
+
+type Scenario func(client *benchmark.WebClient) error
+
+func LoadAcmMonitor(client *benchmark.WebClient) error {
+    _, err := client.AcmMonitor()
+    return err
+}
+
+var scenarios = map[string]Scenario{
+    "LoadAcmMonitor": LoadAcmMonitor,
 }
 
 func main() {
@@ -30,6 +42,7 @@ func main() {
         fmt.Printf("password: ")
         *password = string(gopass.GetPasswd())
     }
+    scen := scenarios[*scenario]
 
     var waitLogin sync.WaitGroup
     waitLogin.Add(*jobs)
@@ -62,7 +75,7 @@ func main() {
             failsTotal := 0
 
             for i := 0; i < *iterations; i++ {
-                _, err = client.AcmMonitor()
+                err = scen(client)
                 if err != nil {
                     jobResult.fails[err.Error()]++
                     failsTotal++

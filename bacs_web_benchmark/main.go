@@ -1,8 +1,10 @@
 package main
 
 import (
+    "encoding/json"
     "flag"
     "fmt"
+    "io/ioutil"
     "log"
     "sync"
     "time"
@@ -19,6 +21,14 @@ var username = flag.String("username", "", "Username")
 var password = flag.String("password", "-", "Password, - to read from stdin")
 var contestId = flag.Int("contest-id", 0, "Contest ID to use")
 var scenario = flag.String("scenario", "AcmMonitor", "Name of scenario to run")
+var jobsConfiguration = flag.String("jobs-config", "", "Configuration file for jobs")
+
+type JobConfiguration struct {
+    Username string
+    Password string
+}
+
+type JobsConfiguration []JobConfiguration
 
 type JobResult struct {
     fails               map[string]int
@@ -60,9 +70,29 @@ var scenarios = map[string]Scenario{
 
 func main() {
     flag.Parse()
-    if *password == "-" {
-        fmt.Printf("password: ")
-        *password = string(gopass.GetPasswd())
+
+    var config JobsConfiguration
+
+    if *jobsConfiguration == "" {
+        if *password == "-" {
+            fmt.Printf("password: ")
+            *password = string(gopass.GetPasswd())
+        }
+        config = make(JobsConfiguration, *jobs)
+        for i, _ := range config {
+            config[i].Username = *username
+            config[i].Password = *password
+        }
+    } else {
+        data, err := ioutil.ReadFile(*jobsConfiguration)
+        if err != nil {
+            log.Fatal(err)
+        }
+        err = json.Unmarshal(data, &config)
+        if err != nil {
+            log.Fatal(err)
+        }
+        config = config[0:*jobs]
     }
     scen := scenarios[*scenario]
 
@@ -77,7 +107,7 @@ func main() {
                 log.Fatal(err)
             }
 
-            err = client.Login(*username, *password)
+            err = client.Login(config[id].Username, config[id].Password)
             if err != nil {
                 log.Fatal(err)
             }

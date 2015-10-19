@@ -13,7 +13,6 @@ import (
     "time"
 
     "github.com/bacsorg/benchmark"
-
     "github.com/howeyc/gopass"
 )
 

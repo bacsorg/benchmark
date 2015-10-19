@@ -6,7 +6,10 @@ import (
     "fmt"
     "io/ioutil"
     "log"
+    "os"
+    "sort"
     "sync"
+    "text/template"
     "time"
 
     "github.com/bacsorg/benchmark"
@@ -68,7 +71,61 @@ var scenarios = map[string]Scenario{
     "SubmitA":              SubmitA,
 }
 
+type usageModel struct {
+    Program   string
+    Scenarios []string
+    Jobs      string
+}
+
+var usage = template.Must(template.New("name").Parse(
+    `{{.Program}} is load testing utility.
+It supports scenarios: {{.Scenarios}}
+
+Usage examples:
+    Request AcmMonitor by 2 workers in parallel, 10 times each.
+
+        {{.Program}} -bacs-url http://testing.new.bacs.cs.istu.ru \
+            -contest-id 1
+            -username you@example.com \
+            -jobs 2 -iterations 10 \
+            -scenario AcmMonitor
+
+    Submit to problem A "A+B" solution,
+    use first 5 users.json as source of users/passwords, each does 10 iterations
+
+        {{.Program}} -bacs-url http://testing.new.bacs.cs.istu.ru \
+            -contest-id 1 \
+            -jobs-config users.json \
+            -jobs 5 -iterations 10 \
+            -scenario SubmitA
+
+-jobs-config example (JSON array):
+    {{.Jobs}}
+
+Flags:
+`))
+
 func main() {
+    flag.Usage = func() {
+        model := usageModel{
+            Program:   os.Args[0],
+            Scenarios: make([]string, 0, len(scenarios)),
+        }
+        for name := range scenarios {
+            model.Scenarios = append(model.Scenarios, name)
+        }
+        jobs, err := json.MarshalIndent(JobsConfiguration{
+            JobConfiguration{"user1@example.com", "password1"},
+            JobConfiguration{"user2@example.com", "password2"},
+        }, "    ", "    ")
+        if err != nil {
+            panic(err)
+        }
+        model.Jobs = string(jobs)
+        sort.Strings(model.Scenarios)
+        usage.Execute(os.Stderr, model)
+        flag.PrintDefaults()
+    }
     flag.Parse()
 
     var config JobsConfiguration

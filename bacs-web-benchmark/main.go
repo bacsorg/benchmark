@@ -54,13 +54,16 @@ func MySchoolFinalSubmits(client *benchmark.WebClient) error {
 	return err
 }
 
+const APlusB = `
+#include <iostream>
+int main() {
+  int a, b;
+  std::cin >> a >> b;
+  std::cout << a + b << std::endl;
+}`
+
 func SubmitA(client *benchmark.WebClient) error {
-	return client.Submit("A", "C++ 11", `#include <iostream>
-                                         int main() {
-                                           int a, b;
-                                           std::cin >> a >> b;
-                                           std::cout << a + b << std::endl;
-                                         }`)
+	return client.Submit("A", "C++ 11", APlusB)
 }
 
 var scenarios = map[string]Scenario{

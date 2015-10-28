@@ -8,6 +8,10 @@ import (
 	"net/url"
 )
 
+const (
+	authCookie = ".ASPXAUTH"
+)
+
 type WebClient struct {
 	bacsBaseUrl string
 	httpClient  *http.Client
@@ -57,12 +61,15 @@ func (c *WebClient) Login(username, password string) error {
 	if err != nil {
 		return err
 	}
+	if resp.StatusCode/100 == 5 {
+		return fmt.Errorf("unable to login: %d %q", resp.StatusCode, resp.Status)
+	}
 	for _, cookie := range c.httpClient.Jar.Cookies(url) {
-		if cookie.Name == "ASP.NET_SessionId" {
+		if cookie.Name == authCookie {
 			return nil
 		}
 	}
-	return fmt.Errorf("unable to login")
+	return fmt.Errorf("unable to login: %q cookie not found", authCookie)
 }
 
 func (c *WebClient) EnterContest(contestId int) error {

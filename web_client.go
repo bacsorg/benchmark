@@ -62,7 +62,7 @@ func (c *WebClient) Login(username, password string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Unable to login")
+	return fmt.Errorf("unable to login")
 }
 
 func (c *WebClient) EnterContest(contestId int) error {
@@ -87,7 +87,7 @@ func (c *WebClient) monitor(name string, params ...string) (string, error) {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != 200 {
-		return "", fmt.Errorf("Unable to read monitor: %v", resp.Status)
+		return "", fmt.Errorf("unable to read monitor: %v", resp.Status)
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
